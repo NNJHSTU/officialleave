@@ -7,7 +7,7 @@ const fields = {
   startTime: document.querySelector("#startTime"),
   endTime: document.querySelector("#endTime"),
   reason: document.querySelector("#reason"),
-  rosterInput: document.querySelector("#rosterInput"),
+  manualStudentInput: document.querySelector("#manualStudentInput"),
   studentInput: document.querySelector("#studentInput"),
 };
 
@@ -174,6 +174,82 @@ function splitLine(line) {
     .filter(Boolean);
 }
 
+function parseManualInputLine(line, lineNumber) {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+
+  const parts = splitLine(trimmed);
+  const tokens = parts.length > 1 ? parts : trimmed.split(/\s+/).filter(Boolean);
+
+  if (tokens.length >= 3) {
+    let studentId = "";
+    let seatCodeRaw = "";
+    let name = "";
+
+    let seatIndex = tokens.findIndex(t => normalizeSeatCode(t) !== null);
+    if (seatIndex !== -1) {
+      seatCodeRaw = tokens[seatIndex];
+      const remaining = tokens.filter((_, idx) => idx !== seatIndex);
+      let idIndex = remaining.findIndex(t => /^\d{5,}$/.test(t));
+      if (idIndex !== -1) {
+        studentId = remaining[idIndex];
+        name = remaining.filter((_, idx) => idx !== idIndex).join(" ");
+      } else {
+        studentId = "";
+        name = remaining.join(" ");
+      }
+    } else {
+      studentId = tokens[0];
+      seatCodeRaw = tokens[1];
+      name = tokens.slice(2).join(" ");
+    }
+
+    const seat = normalizeSeatCode(seatCodeRaw);
+    if (!seat) {
+      return {
+        warning: `第 ${lineNumber} 行手動格式錯誤（座號格式不對，應如 40101 或 401-01）：${trimmed}`
+      };
+    }
+
+    return {
+      studentId,
+      name: name || "未填姓名",
+      ...seat,
+      sourceLine: lineNumber
+    };
+  } else if (tokens.length === 2) {
+    const seatCodeRaw = tokens[0];
+    const name = tokens[1];
+    const seat = normalizeSeatCode(seatCodeRaw);
+    if (!seat) {
+      if (/^\d{5,}$/.test(name)) {
+        return {
+          studentId: name,
+          name: seatCodeRaw,
+          classCode: "未分班",
+          seatNumber: 0,
+          displayCode: "未分班",
+          sortCode: 999999,
+          sourceLine: lineNumber
+        };
+      }
+      return {
+        warning: `第 ${lineNumber} 行手動格式錯誤（應包含班級座號與姓名，如「40101 蘇大輔」）：${trimmed}`
+      };
+    }
+    return {
+      studentId: "",
+      name,
+      ...seat,
+      sourceLine: lineNumber
+    };
+  } else {
+    return {
+      warning: `第 ${lineNumber} 行格式不足（手動輸入每行需至少包含班級座號與姓名，如「40101 蘇大輔」）：${trimmed}`
+    };
+  }
+}
+
 function parseRoster() {
   const byStudentId = new Map();
   const bySeatCode = new Map();
@@ -204,19 +280,15 @@ function parseRoster() {
     addRecord(makeStudentRecordFromParts(student.studentId, student.classCode, student.seatNumber, student.name));
   });
 
-  const rosterLines = fields.rosterInput.value.split(/\r?\n/);
-
-  rosterLines.forEach((line) => {
-    const trimmed = line.trim();
-    if (!trimmed) return;
-
-    const parts = splitLine(trimmed);
-    if (parts.length < 3) return;
-
-    const [studentId, seatCodeRaw, ...nameParts] = parts;
-    const name = nameParts.join(" ").trim();
-    addRecord(makeStudentRecord(studentId, seatCodeRaw, name));
-  });
+  if (fields.manualStudentInput && fields.manualStudentInput.value) {
+    const rosterLines = fields.manualStudentInput.value.split(/\r?\n/);
+    rosterLines.forEach((line, index) => {
+      const parsed = parseManualInputLine(line, index + 1);
+      if (parsed && !parsed.warning) {
+        addRecord(parsed);
+      }
+    });
+  }
 
   return { byStudentId, bySeatCode, byName, byClass };
 }
@@ -291,38 +363,68 @@ function parseStudentLine(line, roster, lineNumber) {
   };
 }
 
+function getActiveInputMode() {
+  const manualInputTab = document.querySelector("#manualInputTab");
+  return manualInputTab && manualInputTab.classList.contains("active") ? "manual" : "roster";
+}
+
 function getStudents() {
   const roster = parseRoster();
   const result = [];
   const seen = new Set();
   const warningMessages = [];
 
-  fields.studentInput.value.split(/\r?\n/).forEach((line, index) => {
-    const parsed = parseStudentLine(line, roster, index + 1);
-    if (!parsed) return;
+  const mode = getActiveInputMode();
 
-    if (parsed.warning) {
-      warningMessages.push(parsed.warning);
-      return;
-    }
+  if (mode === "roster") {
+    fields.studentInput.value.split(/\r?\n/).forEach((line, index) => {
+      const parsed = parseStudentLine(line, roster, index + 1);
+      if (!parsed) return;
 
-    const studentsToAdd = Array.isArray(parsed) ? parsed : [parsed];
-    let duplicateCount = 0;
-
-    studentsToAdd.forEach((student) => {
-      const uniqueKey = student.studentId || student.displayCode;
-      if (seen.has(uniqueKey)) {
-        duplicateCount++;
+      if (parsed.warning) {
+        warningMessages.push(parsed.warning);
         return;
       }
-      seen.add(uniqueKey);
-      result.push(student);
-    });
 
-    if (duplicateCount > 0 && !Array.isArray(parsed)) {
-      warningMessages.push(`第 ${index + 1} 行重複，已略過：${parsed.studentId || parsed.displayCode}`);
+      const studentsToAdd = Array.isArray(parsed) ? parsed : [parsed];
+      let duplicateCount = 0;
+
+      studentsToAdd.forEach((student) => {
+        const uniqueKey = student.studentId || student.displayCode;
+        if (seen.has(uniqueKey)) {
+          duplicateCount++;
+          return;
+        }
+        seen.add(uniqueKey);
+        result.push(student);
+      });
+
+      if (duplicateCount > 0 && !Array.isArray(parsed)) {
+        warningMessages.push(`第 ${index + 1} 行重複，已略過：${parsed.studentId || parsed.displayCode}`);
+      }
+    });
+  } else {
+    if (fields.manualStudentInput) {
+      fields.manualStudentInput.value.split(/\r?\n/).forEach((line, index) => {
+        const parsed = parseManualInputLine(line, index + 1);
+        if (!parsed) return;
+
+        if (parsed.warning) {
+          warningMessages.push(parsed.warning);
+          return;
+        }
+
+        const uniqueKey = parsed.studentId || parsed.displayCode;
+        if (seen.has(uniqueKey)) {
+          warningMessages.push(`第 ${index + 1} 行重複，已略過：${uniqueKey}`);
+          return;
+        }
+
+        seen.add(uniqueKey);
+        result.push(parsed);
+      });
     }
-  });
+  }
 
   result.sort((a, b) => a.sortCode - b.sortCode || a.name.localeCompare(b.name, "zh-Hant"));
 
@@ -369,12 +471,8 @@ function renderStudents() {
   rosterStatus.textContent = `${loaded.isCustom ? "自訂" : "預設"}(${baseCount}筆)`;
 
   const clearRosterBtn = document.querySelector("#clearRosterBtn");
-  const clearRosterBtnGuide = document.querySelector("#clearRosterBtnGuide");
   if (clearRosterBtn) {
     clearRosterBtn.style.display = loaded.isCustom ? "inline-flex" : "none";
-  }
-  if (clearRosterBtnGuide) {
-    clearRosterBtnGuide.style.display = loaded.isCustom ? "inline-flex" : "none";
   }
   warnings.innerHTML = warningMessages.map((message) => `<div>${escapeHtml(message)}</div>`).join("");
 
@@ -601,7 +699,8 @@ function escapeHtml(value) {
 }
 
 function saveState() {
-  const data = Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, field.value]));
+  const data = Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, field ? field.value : ""]));
+  data.activeTabMode = getActiveInputMode();
   localStorage.setItem(storageKey, JSON.stringify(data));
 }
 
@@ -612,9 +711,14 @@ function loadState() {
   try {
     const data = JSON.parse(raw);
     Object.entries(fields).forEach(([key, field]) => {
-      if (typeof data[key] === "string") field.value = data[key];
+      if (field && typeof data[key] === "string") field.value = data[key];
     });
-  } catch {
+
+    if (data.activeTabMode) {
+      switchTabMode(data.activeTabMode);
+    }
+  } catch (e) {
+    console.error("Failed to load state", e);
     localStorage.removeItem(storageKey);
   }
 }
@@ -634,8 +738,13 @@ function loadSample() {
   fields.endTime.value = "10:00";
   fields.location.value = "校門口及活動中心";
   fields.reason.value = "協助交通安全宣導、場地引導及活動秩序維護。";
-  fields.rosterInput.value = "";
-  fields.studentInput.value = ["40101 朱○○", "401-02 吳○○", "411014 林○○", "40201 楊○○", "402-02 黃○○"].join("\n");
+  if (fields.manualStudentInput) fields.manualStudentInput.value = "";
+  fields.studentInput.value = [
+    "40101 蘇大輔",
+    "401-02 賴小祥",
+    "40201 蘇小祥",
+    "402-02 賴大寶"
+  ].join("\n");
   update();
 }
 
@@ -660,7 +769,6 @@ document.querySelector("#printBtn").addEventListener("click", () => {
 
 const excelUpload = document.querySelector("#excelUpload");
 const clearRosterBtn = document.querySelector("#clearRosterBtn");
-const clearRosterBtnGuide = document.querySelector("#clearRosterBtnGuide");
 
 if (excelUpload) {
   excelUpload.addEventListener("change", handleExcelUpload);
@@ -676,10 +784,6 @@ function handleClearRoster() {
 
 if (clearRosterBtn) {
   clearRosterBtn.addEventListener("click", handleClearRoster);
-}
-
-if (clearRosterBtnGuide) {
-  clearRosterBtnGuide.addEventListener("click", handleClearRoster);
 }
 
 // Toggle Guide Panel
@@ -713,6 +817,39 @@ if (toggleGuideBtn && guideContent && guidePanel) {
     setGuideState(newState);
     localStorage.setItem(guideStorageKey, String(newState));
   });
+}
+
+// Switch Tab Mode Function
+function switchTabMode(mode) {
+  const useRosterTab = document.querySelector("#useRosterTab");
+  const manualInputTab = document.querySelector("#manualInputTab");
+  const useRosterMode = document.querySelector("#useRosterMode");
+  const manualInputMode = document.querySelector("#manualInputMode");
+
+  if (!useRosterTab || !manualInputTab || !useRosterMode || !manualInputMode) return;
+
+  if (mode === "manual") {
+    useRosterTab.classList.remove("active");
+    manualInputTab.classList.add("active");
+    useRosterMode.style.display = "none";
+    manualInputMode.style.display = "block";
+  } else {
+    useRosterTab.classList.add("active");
+    manualInputTab.classList.remove("active");
+    useRosterMode.style.display = "block";
+    manualInputMode.style.display = "none";
+  }
+  update();
+}
+
+const useRosterTab = document.querySelector("#useRosterTab");
+const manualInputTab = document.querySelector("#manualInputTab");
+
+if (useRosterTab) {
+  useRosterTab.addEventListener("click", () => switchTabMode("roster"));
+}
+if (manualInputTab) {
+  manualInputTab.addEventListener("click", () => switchTabMode("manual"));
 }
 
 loadState();

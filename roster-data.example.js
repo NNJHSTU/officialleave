@@ -2,20 +2,26 @@
 window.STUDENT_ROSTER = [
   {
     "studentId": "999001",
-    "classCode": "101",
+    "classCode": "401",
     "seatNumber": 1,
-    "name": "陳大同"
+    "name": "蘇大輔"
   },
   {
     "studentId": "999002",
-    "classCode": "101",
+    "classCode": "401",
     "seatNumber": 2,
-    "name": "林小華"
+    "name": "賴小祥"
   },
   {
     "studentId": "999003",
-    "classCode": "102",
+    "classCode": "402",
     "seatNumber": 1,
-    "name": "王大明"
+    "name": "蘇小祥"
+  },
+  {
+    "studentId": "999004",
+    "classCode": "402",
+    "seatNumber": 2,
+    "name": "賴大寶"
   }
 ];

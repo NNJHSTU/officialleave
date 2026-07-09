@@ -40,18 +40,22 @@
               </div>
               <div class="step-card">
                 <span class="step-num">2</span>
-                <h3>上傳/更新系統名冊</h3>
-                <p>名冊會儲存在本機瀏覽器中，不需每次重複上傳。您可直接點擊 <label for="excelUpload" style="color: var(--accent); cursor: pointer; text-decoration: underline; font-weight: 700;">「上傳名冊」</label> 或是下方按鈕來匯入 Excel 檔案：</p>
+                <h3>上傳/更新系統名冊 (選用)</h3>
+                <p>名冊會儲存在本機中。您可上傳 Excel 檔案以啟用「使用名冊比對」功能；若您選擇使用「全手動輸入」分頁，則可跳過此步驟：</p>
+                <div class="roster-status-wrap" style="margin-top: 8px; font-size: 0.82rem; color: var(--muted); display: flex; align-items: center; gap: 4px;">
+                  目前狀態：<strong id="rosterStatus" style="color: var(--accent);">自動載入中</strong>
+                </div>
                 <div class="guide-actions" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
                   <label for="excelUpload" class="btn ghost btn-sm">上傳名冊 Excel</label>
-                  <button id="clearRosterBtnGuide" type="button" class="ghost btn-sm warn-btn" style="display: none;">清除自訂名冊</button>
-                  <a href="#rosterTitle" class="scroll-link" style="font-size: 0.8rem; color: var(--accent); text-decoration: none; font-weight: 700; margin-left: 4px;">自訂/手動說明 ↓</a>
+                  <input id="excelUpload" type="file" accept=".xlsx, .xls" style="display: none;">
+                  <button id="clearRosterBtn" type="button" class="ghost btn-sm warn-btn" style="display: none;">清除自訂名冊</button>
+                  <a href="./南寧高中學生名冊_範例.xlsx" class="download-link" download style="font-size: 0.8rem; margin-left: auto;">下載名冊範例 Excel</a>
                 </div>
               </div>
               <div class="step-card">
                 <span class="step-num">3</span>
                 <h3>填寫活動資訊與名單</h3>
-                <p>填寫公假事由，並在「<strong>公假名單</strong>」輸入學號、姓名或班級座號。系統會自動遮罩中間姓名（如：<code>朱○嘉</code>）並依班級自動分組與產出簽章欄。</p>
+                <p>填寫公假事由，並選擇輸入模式：(1)「<strong>使用名冊比對</strong>」：打學號、座號或姓名；(2)「<strong>全手動輸入</strong>」：打學號,座號,姓名。系統會自動進行去識別化遮罩（如：<code>蘇○輔</code>）。</p>
               </div>
               <div class="step-card">
                 <span class="step-num">4</span>
@@ -101,31 +105,33 @@
         </section>
 
         <section class="panel list-panel" aria-labelledby="studentsTitle">
-          <div class="panel-heading">
-            <h2 id="studentsTitle">公假名單</h2>
+          <div class="panel-heading" style="margin-bottom: 12px;">
+            <h2 id="studentsTitle" style="margin-bottom: 0;">公假名單</h2>
             <span id="studentCount">0 人</span>
           </div>
-          <p class="hint">每行可輸入「40201」、「402-01」、「學號」、「姓名」或三碼班級代號如「402」。輸入班級代號會帶入全班；若同名，請改用學號或班級座號。</p>
-          <textarea id="studentInput" rows="14" spellcheck="false" placeholder="40201&#10;402-02&#10;411004&#10;王○○&#10;402"></textarea>
+
+          <!-- Mode Toggle Tabs -->
+          <div class="input-mode-tabs">
+            <button id="useRosterTab" type="button" class="tab-btn active">使用名冊比對</button>
+            <button id="manualInputTab" type="button" class="tab-btn">全手動輸入</button>
+          </div>
+
+          <!-- Use Roster Mode Panel -->
+          <div id="useRosterMode">
+            <p class="hint">每行可輸入「40101」、「401-02」、「學號」、「姓名」或三碼班級代號如「401」(帶入全班)。</p>
+            <textarea id="studentInput" rows="12" spellcheck="false" placeholder="40101&#10;401-02&#10;999001&#10;蘇大輔&#10;401"></textarea>
+          </div>
+
+          <!-- Manual Input Mode Panel -->
+          <div id="manualInputMode" style="display: none;">
+            <p class="hint">直接輸入學生資料。每行輸入「學號,班級座號,姓名」或「班級座號 姓名」（例如「40101 蘇大輔」），系統會直接產生公假單，並自動加入暫存名冊中供後續比對。</p>
+            <textarea id="manualStudentInput" rows="12" spellcheck="false" placeholder="例如：&#10;999001,40101,蘇大輔&#10;40102 賴小祥"></textarea>
+          </div>
+
           <div id="warnings" class="warnings" aria-live="polite"></div>
         </section>
 
-        <section class="panel" aria-labelledby="rosterTitle">
-          <div class="panel-heading">
-            <h2 id="rosterTitle">手動輸入學生資料</h2>
-            <span id="rosterStatus">自動載入中</span>
-          </div>
-          <div class="roster-actions">
-            <a href="./南寧高中學生名冊_範例.xlsx" class="download-link" download>下載名冊範例 Excel</a>
-            <div class="upload-buttons">
-              <label for="excelUpload" class="btn ghost btn-sm">上傳名冊 Excel</label>
-              <input id="excelUpload" type="file" accept=".xlsx, .xls" style="display: none;">
-              <button id="clearRosterBtn" type="button" class="ghost btn-sm warn-btn" style="display: none;">清除自訂名冊</button>
-            </div>
-          </div>
-          <p class="hint">除了上傳 Excel 檔案外，您也可以在此直接輸入「學號,班級座號,姓名」以手動新增或臨時補充學生名冊，系統會優先對照此處資料。</p>
-          <textarea id="rosterInput" rows="6" spellcheck="false" placeholder="手動輸入範例：&#10;411004,40101,王○○&#10;411005,401-02,陳○○"></textarea>
-        </section>
+
       </div>
     </section>
 
