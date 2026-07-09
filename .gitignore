@@ -1,0 +1,13 @@
+# 忽略含有真實學生個資的名冊檔案
+roster-data.js
+
+# 忽略原始 Excel 試算表檔案
+*.xlsx
+*.xls
+*.xlsx.xlsx
+
+# 忽略編輯器或系統暫存檔
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>南寧高中公假單系統</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="workspace" aria-label="公假單編輯區">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">南寧高級中學</p>
+          <h1>公假單系統</h1>
+        </div>
+        <div class="actions">
+          <button id="loadSampleBtn" type="button" class="ghost">載入範例</button>
+          <button id="clearBtn" type="button" class="ghost">清空</button>
+          <button id="printBtn" type="button" class="primary">列印公假單</button>
+        </div>
+      </header>
+
+      <div class="editor-grid">
+        <section class="panel guide-panel" aria-labelledby="guideTitle">
+          <header class="panel-heading">
+            <h2 id="guideTitle" style="margin-bottom: 0;">🧭 系統操作指引</h2>
+            <button id="toggleGuideBtn" class="toggle-btn" type="button" aria-expanded="true">收合指引</button>
+          </header>
+          <div id="guideContent" class="guide-content">
+            <div class="steps-grid">
+              <div class="step-card">
+                <span class="step-num">1</span>
+                <h3>下載校內最新名冊</h3>
+                <p>前往雲端硬碟下載最新學期學生名冊 Excel 檔（需登入校內帳號）。</p>
+                <a href="https://drive.google.com/drive/folders/1ccBmvWKUXzxWu4cxIqy8X1RsS2TPQeyi?usp=sharing" target="_blank" class="drive-btn">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align: middle; margin-right: 4px;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                  前往名冊資料夾
+                </a>
+              </div>
+              <div class="step-card">
+                <span class="step-num">2</span>
+                <h3>上傳/更新系統名冊</h3>
+                <p>名冊會儲存在本機瀏覽器中，不需每次重複上傳。您可直接點擊 <label for="excelUpload" style="color: var(--accent); cursor: pointer; text-decoration: underline; font-weight: 700;">「上傳名冊」</label> 或是下方按鈕來匯入 Excel 檔案：</p>
+                <div class="guide-actions" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                  <label for="excelUpload" class="btn ghost btn-sm">上傳名冊 Excel</label>
+                  <button id="clearRosterBtnGuide" type="button" class="ghost btn-sm warn-btn" style="display: none;">清除自訂名冊</button>
+                  <a href="#rosterTitle" class="scroll-link" style="font-size: 0.8rem; color: var(--accent); text-decoration: none; font-weight: 700; margin-left: 4px;">自訂/手動說明 ↓</a>
+                </div>
+              </div>
+              <div class="step-card">
+                <span class="step-num">3</span>
+                <h3>填寫活動資訊與名單</h3>
+                <p>填寫公假事由，並在「<strong>公假名單</strong>」輸入學號、姓名或班級座號。系統會自動遮罩中間姓名（如：<code>朱○嘉</code>）並依班級自動分組與產出簽章欄。</p>
+              </div>
+              <div class="step-card">
+                <span class="step-num">4</span>
+                <h3>確認即時預覽與列印</h3>
+                <p>檢查右側的即時預覽公假單，確認排版與分頁無誤後，點擊右上角「<strong>列印公假單</strong>」進行列印。</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="activityTitle">
+          <h2 id="activityTitle">活動資訊</h2>
+          <div class="form-grid">
+            <label>
+              活動名稱
+              <input id="activityName" type="text" placeholder="例如：交通安全宣導服務隊">
+            </label>
+            <label>
+              申請單位
+              <input id="applicantUnit" type="text" placeholder="例如：學務處生活輔導組">
+            </label>
+            <label>
+              申請人
+              <input id="applicantName" type="text" placeholder="例如：賴祥宇">
+            </label>
+            <label>
+              活動日期
+              <input id="activityDate" type="date">
+            </label>
+            <label>
+              活動地點
+              <input id="location" type="text" placeholder="例如：活動中心、校門口">
+            </label>
+            <label>
+              開始時間
+              <input id="startTime" type="time">
+            </label>
+            <label>
+              結束時間
+              <input id="endTime" type="time">
+            </label>
+            <label class="wide">
+              活動事由
+              <textarea id="reason" rows="3" placeholder="簡述公假原因與活動內容"></textarea>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel list-panel" aria-labelledby="studentsTitle">
+          <div class="panel-heading">
+            <h2 id="studentsTitle">公假名單</h2>
+            <span id="studentCount">0 人</span>
+          </div>
+          <p class="hint">每行可輸入「40201」、「402-01」、「學號」、「姓名」或三碼班級代號如「402」。輸入班級代號會帶入全班；若同名，請改用學號或班級座號。</p>
+          <textarea id="studentInput" rows="14" spellcheck="false" placeholder="40201&#10;402-02&#10;411004&#10;王○○&#10;402"></textarea>
+          <div id="warnings" class="warnings" aria-live="polite"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="rosterTitle">
+          <div class="panel-heading">
+            <h2 id="rosterTitle">手動輸入學生資料</h2>
+            <span id="rosterStatus">自動載入中</span>
+          </div>
+          <div class="roster-actions">
+            <a href="./南寧高中學生名冊_範例.xlsx" class="download-link" download>下載名冊範例 Excel</a>
+            <div class="upload-buttons">
+              <label for="excelUpload" class="btn ghost btn-sm">上傳名冊 Excel</label>
+              <input id="excelUpload" type="file" accept=".xlsx, .xls" style="display: none;">
+              <button id="clearRosterBtn" type="button" class="ghost btn-sm warn-btn" style="display: none;">清除自訂名冊</button>
+            </div>
+          </div>
+          <p class="hint">除了上傳 Excel 檔案外，您也可以在此直接輸入「學號,班級座號,姓名」以手動新增或臨時補充學生名冊，系統會優先對照此處資料。</p>
+          <textarea id="rosterInput" rows="6" spellcheck="false" placeholder="手動輸入範例：&#10;411004,40101,王○○&#10;411005,401-02,陳○○"></textarea>
+        </section>
+      </div>
+    </section>
+
+    <aside class="preview-wrap" aria-label="公假單預覽">
+      <div class="preview-tools">
+        <span>即時預覽</span>
+        <span id="classCount">0 班</span>
+      </div>
+      <article id="permitPreview" class="permit-paper">
+        <header class="permit-header">
+          <h2>南寧高級中學學生公假單請示單</h2>
+        </header>
+
+        <section class="info-table" aria-label="活動資訊預覽">
+          <div><strong>活動名稱</strong><span data-preview="activityName">未填寫</span></div>
+          <div><strong>申請單位</strong><span data-preview="applicantUnit">未填寫</span></div>
+          <div><strong>申請人</strong><span data-preview="applicantName">未填寫</span></div>
+          <div><strong>活動地點</strong><span data-preview="location">未填寫</span></div>
+          <div><strong>活動日期</strong><span data-preview="activityDate">未填寫</span></div>
+          <div><strong>活動時間</strong><span data-preview="timeRange">未填寫</span></div>
+          <div class="full"><strong>活動事由</strong><span data-preview="reason">未填寫</span></div>
+        </section>
+
+        <section class="student-preview">
+          <h3>公假學生名單</h3>
+          <div id="groupedStudents" class="empty-state">尚未輸入學生名單</div>
+        </section>
+
+        <section class="mentor-section">
+          <h3>導師簽名</h3>
+          <div id="mentorSignatures" class="mentor-grid">
+            <div class="signature-line"><span>班級</span><b>導師簽名</b></div>
+          </div>
+        </section>
+
+        <section class="approval-section" aria-label="核章欄位">
+          <div>申請單位</div>
+          <div>生輔組</div>
+          <div>學務處</div>
+          <div>校長</div>
+        </section>
+      </article>
+      <div id="printPages" class="print-pages" aria-hidden="true"></div>
+    </aside>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="./roster-data.js"></script>
+  <script src="./script.js"></script>
+</body>
+</html>
