@@ -799,4 +799,118 @@ textarea:focus {
   color: var(--accent);
 }
 
+/* Sign-in Sheet Print Styles */
+.signin-student-table th,
+.signin-student-table td {
+  height: 38px !important;
+  padding: 6px 8px !important;
+}
+
+.signin-student-table td.signin-box {
+  background: transparent;
+  cursor: default;
+}
+
+/* Stats Dashboard Mini */
+.stats-dashboard {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin-top: 12px;
+  padding: 10px 12px;
+}
+
+.stats-grid-mini {
+  display: flex;
+  gap: 16px;
+  border-bottom: 1px dashed var(--line);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.stats-item-mini {
+  display: flex;
+  flex-direction: column;
+}
+
+.stats-item-mini .label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.stats-item-mini strong {
+  font-size: 1.1rem;
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.stats-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.stats-breakdown span {
+  background: #f1f5f9;
+  border-radius: 3px;
+  padding: 2px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stats-breakdown span b {
+  color: var(--accent);
+}
+
+/* Print and Preview Stats Summary Box */
+.preview-stats-summary,
+.print-stats-summary {
+  font-size: 0.85rem;
+  color: #333;
+  font-weight: 700;
+  margin-top: 4px;
+  margin-bottom: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+
+@media print {
+  .print-stats-summary {
+    background: transparent !important;
+    border: 1px solid #333 !important;
+    color: #000 !important;
+  }
+}
+
+/* Double-column Table Layout for Permit Print */
+.print-student-grid {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.print-student-col {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Double-column Grid for on-screen Preview Class Blocks */
+@media (min-width: 600px) {
+  #groupedStudents {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  
+  #groupedStudents .empty-state {
+    grid-column: 1 / -1;
+  }
+}
+
 

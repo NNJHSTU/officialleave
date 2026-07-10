@@ -11,12 +11,13 @@
     <section class="workspace" aria-label="公假單編輯區">
       <header class="topbar">
         <div>
-          <p class="eyebrow">南寧高級中學</p>
+          <p class="eyebrow" data-preview="schoolEyebrow">南寧高級中學</p>
           <h1>公假單系統</h1>
         </div>
         <div class="actions">
           <button id="loadSampleBtn" type="button" class="ghost">載入範例</button>
           <button id="clearBtn" type="button" class="ghost">清空</button>
+          <button id="printSignInBtn" type="button" class="ghost">列印簽到表</button>
           <button id="printBtn" type="button" class="primary">列印公假單</button>
         </div>
       </header>
@@ -55,12 +56,12 @@
               <div class="step-card">
                 <span class="step-num">3</span>
                 <h3>填寫活動資訊與名單</h3>
-                <p>填寫公假事由，並選擇輸入模式：(1)「<strong>使用名冊比對</strong>」：打學號、座號或姓名；(2)「<strong>全手動輸入</strong>」：打學號,座號,姓名。系統會自動進行去識別化遮罩（如：<code>蘇○輔</code>）。</p>
+                <p>活動日期會預設為「今天」。填寫公假事由，並選擇「<strong>使用名冊比對</strong>」（打學號、座號或姓名）或「<strong>全手動輸入</strong>」（打學號,座號,姓名）。名單下方會自動顯示總人數與班級人數統計，並進行去識別化遮罩（如：<code>蘇○輔</code>）。</p>
               </div>
               <div class="step-card">
                 <span class="step-num">4</span>
                 <h3>確認即時預覽與列印</h3>
-                <p>檢查右側的即時預覽公假單，確認排版與分頁無誤後，點擊右上角「<strong>列印公假單</strong>」進行列印。</p>
+                <p>檢查右側預覽，確認排版正確後即可選擇：點選「<strong>列印公假單</strong>」印出有遮罩的公假請示單；或點選「<strong>列印簽到表</strong>」印出實名簽到表供現場簽到。</p>
               </div>
             </div>
           </div>
@@ -69,6 +70,10 @@
         <section class="panel" aria-labelledby="activityTitle">
           <h2 id="activityTitle">活動資訊</h2>
           <div class="form-grid">
+            <label>
+              學校名稱
+              <input id="schoolName" type="text" placeholder="例如：南寧高級中學" value="南寧高級中學">
+            </label>
             <label>
               活動名稱
               <input id="activityName" type="text" placeholder="例如：交通安全宣導服務隊">
@@ -128,11 +133,30 @@
             <textarea id="manualStudentInput" rows="12" spellcheck="false" placeholder="例如：&#10;999001,40101,蘇大輔&#10;40102 賴小祥"></textarea>
           </div>
 
+
+          <!-- Statistics Dashboard -->
+          <div id="statsDashboard" class="stats-dashboard" style="display: none;">
+            <div class="stats-grid-mini">
+              <div class="stats-item-mini">
+                <span class="label">總人數</span>
+                <strong id="statsTotalCount">0 人</strong>
+              </div>
+              <div class="stats-item-mini">
+                <span class="label">班級數</span>
+                <strong id="statsClassCount">0 班</strong>
+              </div>
+            </div>
+            <div class="stats-breakdown" id="statsBreakdown"></div>
+          </div>
+
           <div id="warnings" class="warnings" aria-live="polite"></div>
         </section>
 
 
       </div>
+      <footer class="app-footer" style="text-align: center; padding: 16px; font-size: 0.76rem; color: var(--muted); border-top: 1px solid var(--border); margin-top: 20px;">
+        <p>製作人：Antigravity (Google DeepMind AI Coding Assistant) &nbsp;|&nbsp; 靈感與設計：114學年度南寧高中生輔組組長</p>
+      </footer>
     </section>
 
     <aside class="preview-wrap" aria-label="公假單預覽">
@@ -157,6 +181,7 @@
 
         <section class="student-preview">
           <h3>公假學生名單</h3>
+          <div id="previewStatsSummary" class="preview-stats-summary" style="display: none;"></div>
           <div id="groupedStudents" class="empty-state">尚未輸入學生名單</div>
         </section>
 

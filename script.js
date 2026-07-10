@@ -1,4 +1,5 @@
 const fields = {
+  schoolName: document.querySelector("#schoolName"),
   activityName: document.querySelector("#activityName"),
   applicantUnit: document.querySelector("#applicantUnit"),
   applicantName: document.querySelector("#applicantName"),
@@ -12,6 +13,7 @@ const fields = {
 };
 
 const previewTargets = {
+  schoolEyebrow: document.querySelector('[data-preview="schoolEyebrow"]'),
   activityName: document.querySelector('[data-preview="activityName"]'),
   applicantUnit: document.querySelector('[data-preview="applicantUnit"]'),
   applicantName: document.querySelector('[data-preview="applicantName"]'),
@@ -445,6 +447,10 @@ function renderActivityInfo() {
   const end = fields.endTime.value || "";
   const timeRange = start && end ? `${start} 至 ${end}` : start || end || "未填寫";
 
+  const school = fields.schoolName.value.trim() || "南寧高級中學";
+  if (previewTargets.schoolEyebrow) {
+    previewTargets.schoolEyebrow.textContent = school;
+  }
   previewTargets.activityName.textContent = fields.activityName.value.trim() || "未填寫";
   previewTargets.applicantUnit.textContent = fields.applicantUnit.value.trim() || "未填寫";
   previewTargets.applicantName.textContent = fields.applicantName.value.trim() || "未填寫";
@@ -480,6 +486,13 @@ function renderStudents() {
     groupedStudents.className = "empty-state";
     groupedStudents.textContent = "尚未輸入學生名單";
     mentorSignatures.innerHTML = '<div class="signature-line"><span>班級</span><b>導師簽名</b></div>';
+    
+    const previewStatsSummary = document.querySelector("#previewStatsSummary");
+    if (previewStatsSummary) {
+      previewStatsSummary.style.display = "none";
+      previewStatsSummary.innerHTML = "";
+    }
+
     renderPrintPages(students, groups);
     return;
   }
@@ -496,6 +509,44 @@ function renderStudents() {
     )
     .join("");
   renderPrintPages(students, groups);
+
+  // Update Statistics Dashboard
+  const statsDashboard = document.querySelector("#statsDashboard");
+  const statsTotalCount = document.querySelector("#statsTotalCount");
+  const statsClassCount = document.querySelector("#statsClassCount");
+  const statsBreakdown = document.querySelector("#statsBreakdown");
+
+  if (statsDashboard && statsTotalCount && statsClassCount && statsBreakdown) {
+    if (students.length > 0) {
+      statsDashboard.style.display = "block";
+      statsTotalCount.textContent = `${students.length} 人`;
+      statsClassCount.textContent = `${groups.size} 班`;
+
+      const sortedClasses = [...groups.keys()].sort();
+      statsBreakdown.innerHTML = sortedClasses
+        .map((classCode) => {
+          const count = groups.get(classCode).length;
+          return `<span>${escapeHtml(readableClass(classCode))}：<b>${count}</b>人</span>`;
+        })
+        .join("");
+    } else {
+      statsDashboard.style.display = "none";
+    }
+  }
+
+  // Update Preview Stats Summary (On-screen Preview)
+  const previewStatsSummary = document.querySelector("#previewStatsSummary");
+  if (previewStatsSummary) {
+    if (students.length > 0) {
+      previewStatsSummary.style.display = "block";
+      const sortedClasses = [...groups.keys()].sort();
+      const breakdownText = sortedClasses.map(code => `${readableClass(code)}：${groups.get(code).length}人`).join("、");
+      previewStatsSummary.innerHTML = `公假統計：共 ${groups.size} 班，計 ${students.length} 人（${breakdownText}）`;
+    } else {
+      previewStatsSummary.style.display = "none";
+      previewStatsSummary.innerHTML = "";
+    }
+  }
 }
 
 function renderClassBlock(classCode, classStudents) {
@@ -533,6 +584,7 @@ function getActivityDetails() {
   const start = fields.startTime.value || "";
   const end = fields.endTime.value || "";
   return {
+    schoolName: fields.schoolName.value.trim() || "南寧高級中學",
     activityName: fields.activityName.value.trim() || "未填寫",
     applicantUnit: fields.applicantUnit.value.trim() || "未填寫",
     applicantName: fields.applicantName.value.trim() || "未填寫",
@@ -551,51 +603,174 @@ function flattenStudentRows(groups) {
   });
   return rows;
 }
+function paginateClassBlocks(groups, firstPageCapacity, middlePageCapacity, lastPageReserve) {
+  function getRemainingRows(blocks) {
+    return blocks.reduce((sum, b) => sum + 1 + Math.ceil(b.students.length / 2), 0);
+  }
 
-function paginateRows(rows, firstPageCapacity, middlePageCapacity, lastPageReserve) {
-  if (!rows.length) return [[]];
+  const sortedClasses = [...groups.keys()].sort();
+  const blocks = sortedClasses.map(code => ({
+    classCode: code,
+    students: [...groups.get(code)],
+    isContinuation: false
+  }));
 
   const pages = [];
-  let index = 0;
-  let capacity = firstPageCapacity;
+  let currentPage = [];
+  let currentCapacity = firstPageCapacity;
+  let remainingCapacity = currentCapacity;
 
-  while (index < rows.length) {
-    const remaining = rows.length - index;
-    const reserve = pages.length === 0 ? lastPageReserve : lastPageReserve;
-    const adjustedCapacity = remaining > capacity && remaining - capacity <= reserve ? Math.max(1, capacity - reserve) : capacity;
-    let pageRows = rows.slice(index, index + adjustedCapacity);
+  while (blocks.length > 0) {
+    const totalRemainingRows = getRemainingRows(blocks);
 
-    if (pageRows.length && pageRows[pageRows.length - 1].type === "class" && index + pageRows.length < rows.length) {
-      pageRows = pageRows.slice(0, -1);
+    let capacityLimit = remainingCapacity;
+    if (totalRemainingRows > remainingCapacity && totalRemainingRows - remainingCapacity <= lastPageReserve) {
+      capacityLimit = Math.max(2, remainingCapacity - lastPageReserve);
     }
-    if (!pageRows.length) pageRows = rows.slice(index, index + adjustedCapacity);
 
-    pages.push(pageRows);
-    index += pageRows.length;
-    capacity = middlePageCapacity;
+    if (capacityLimit <= 1) {
+      pages.push(currentPage);
+      currentPage = [];
+      currentCapacity = middlePageCapacity;
+      remainingCapacity = currentCapacity;
+      continue;
+    }
+
+    const block = blocks[0];
+    const rowsNeeded = 1 + Math.ceil(block.students.length / 2);
+
+    if (rowsNeeded <= capacityLimit) {
+      currentPage.push({
+        classCode: block.classCode,
+        students: block.students,
+        isContinuation: block.isContinuation,
+        hasContinuation: false
+      });
+      remainingCapacity -= rowsNeeded;
+      blocks.shift();
+    } else {
+      const maxStudentRows = capacityLimit - 1;
+      const maxStudents = maxStudentRows * 2;
+
+      if (maxStudents > 0) {
+        const fitStudents = block.students.slice(0, maxStudents);
+        currentPage.push({
+          classCode: block.classCode,
+          students: fitStudents,
+          isContinuation: block.isContinuation,
+          hasContinuation: true
+        });
+        block.students = block.students.slice(maxStudents);
+        block.isContinuation = true;
+      }
+      
+      pages.push(currentPage);
+      currentPage = [];
+      currentCapacity = middlePageCapacity;
+      remainingCapacity = currentCapacity;
+    }
+  }
+
+  if (currentPage.length > 0) {
+    pages.push(currentPage);
   }
 
   return pages;
 }
 
+function renderPrintClassBlock(classCode, students, isContinuation, hasContinuation) {
+  const half = Math.ceil(students.length / 2);
+  const leftStudents = students.slice(0, half);
+  const rightStudents = students.slice(half);
+
+  function renderColumnBody(colStudents) {
+    return colStudents
+      .map((student) => `
+        <tr>
+          <td class="class-name">${escapeHtml(readableClass(student.classCode))}</td>
+          <td class="seat">${String(student.seatNumber).padStart(2, "0")}</td>
+          <td>${escapeHtml(maskName(student.name))}</td>
+        </tr>
+      `)
+      .join("");
+  }
+
+  const leftBody = renderColumnBody(leftStudents);
+  const rightBody = renderColumnBody(rightStudents);
+
+  return `
+    <div class="print-class-section" style="margin-bottom: 12px; break-inside: avoid;">
+      <h4 style="font-size: 0.92rem; margin-top: 0; margin-bottom: 6px; border-bottom: 1px solid #333; padding-bottom: 2px; text-align: left; font-weight: 700;">
+        ${escapeHtml(readableClass(classCode))}${isContinuation ? "（續）" : ""}${hasContinuation ? "（接下頁）" : ""}
+      </h4>
+      <div class="print-student-grid" style="display: flex; gap: 20px;">
+        <div class="print-student-col" style="flex: 1; min-width: 0;">
+          <table class="student-table print-student-table">
+            <thead>
+              <tr>
+                <th class="class-name">班級</th>
+                <th class="seat">座號</th>
+                <th>姓名</th>
+              </tr>
+            </thead>
+            <tbody>${leftBody}</tbody>
+          </table>
+        </div>
+        <div class="print-student-col" style="flex: 1; min-width: 0;">
+          ${rightBody.length ? `
+            <table class="student-table print-student-table">
+              <thead>
+                <tr>
+                  <th class="class-name">班級</th>
+                  <th class="seat">座號</th>
+                  <th>姓名</th>
+                </tr>
+              </thead>
+              <tbody>${rightBody}</tbody>
+            </table>
+          ` : ""}
+        </div>
+      </div>
+      ${hasContinuation ? `
+        <div class="class-continuation-note" style="text-align: right; font-size: 0.8rem; font-weight: 700; margin-top: 6px; color: #333;">
+          （以下接下頁）
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
 function renderPrintPages(students, groups) {
-  const rows = flattenStudentRows(groups);
-  const pages = paginateRows(rows, 18, 27, 8);
+  const pages = paginateClassBlocks(groups, 18, 27, 8);
   const totalPages = pages.length;
+  const details = getActivityDetails();
+  const school = details.schoolName;
+
+  const sortedClasses = [...groups.keys()].sort();
+  const breakdownText = sortedClasses.map(code => `${readableClass(code)}：${groups.get(code).length}人`).join("、");
+  const statsSummaryHtml = students.length 
+    ? `<div class="print-stats-summary" style="font-size: 0.85rem; margin-bottom: 8px; color: #333; font-weight: 700;">公假統計：共 ${groups.size} 班，計 ${students.length} 人（${breakdownText}）</div>` 
+    : '';
 
   printPages.innerHTML = pages
-    .map((pageRows, pageIndex) => {
+    .map((pageBlocks, pageIndex) => {
       const isFirst = pageIndex === 0;
       const isLast = pageIndex === totalPages - 1;
+      
+      const blocksHtml = pageBlocks
+        .map(pb => renderPrintClassBlock(pb.classCode, pb.students, pb.isContinuation, pb.hasContinuation))
+        .join("");
+
       return `
         <article class="print-page">
           <header class="print-header">
-            <h2>南寧高級中學學生公假單請示單</h2>
+            <h2>${escapeHtml(school)}學生公假單請示單</h2>
           </header>
           ${isFirst ? renderPrintInfoTable() : renderContinuationLabel()}
           <section class="print-students">
             <h3>公假學生名單${!isFirst ? "（續）" : ""}</h3>
-            ${students.length ? renderPrintStudentRows(pageRows) : '<div class="empty-state">尚未輸入學生名單</div>'}
+            ${isFirst ? statsSummaryHtml : ''}
+            ${students.length ? blocksHtml : '<div class="empty-state">尚未輸入學生名單</div>'}
           </section>
           ${isLast ? renderPrintSignatures([...groups.keys()]) : ""}
           <footer class="print-footer">第 ${pageIndex + 1} 頁，共 ${totalPages} 頁</footer>
@@ -630,13 +805,13 @@ function renderContinuationLabel() {
   `;
 }
 
-function renderPrintStudentRows(rows) {
+function renderPrintStudentColumn(rows) {
   let currentClassCode = "";
   const body = rows
     .map((row) => {
       if (row.type === "class") {
         currentClassCode = row.classCode;
-        return `<tr class="class-row"><td colspan="3">${escapeHtml(readableClass(row.classCode))}</td></tr>`;
+        return `<tr class="class-row"><td colspan="3" style="background: #f1f5f9; font-weight: 700; text-align: left;">${escapeHtml(readableClass(row.classCode))}</td></tr>`;
       }
 
       const student = row.student;
@@ -665,6 +840,24 @@ function renderPrintStudentRows(rows) {
   `;
 }
 
+function renderPrintStudentRows(rows) {
+  if (!rows.length) return "";
+  const half = Math.ceil(rows.length / 2);
+  const leftRows = rows.slice(0, half);
+  const rightRows = rows.slice(half);
+
+  return `
+    <div class="print-student-grid">
+      <div class="print-student-col">
+        ${renderPrintStudentColumn(leftRows)}
+      </div>
+      <div class="print-student-col">
+        ${rightRows.length ? renderPrintStudentColumn(rightRows) : ""}
+      </div>
+    </div>
+  `;
+}
+
 function renderPrintSignatures(classCodes) {
   const signatures = classCodes.length
     ? classCodes
@@ -687,6 +880,162 @@ function renderPrintSignatures(classCodes) {
       <div>校長</div>
     </section>
   `;
+}
+
+function renderSignInInfoTable() {
+  const details = getActivityDetails();
+  return `
+    <section class="info-table print-info-table signin-info-table">
+      <div><strong>活動名稱</strong><span>${escapeHtml(details.activityName)}</span></div>
+      <div><strong>申請單位</strong><span>${escapeHtml(details.applicantUnit)}</span></div>
+      <div><strong>帶隊教師</strong><span>${escapeHtml(details.applicantName)}</span></div>
+      <div><strong>活動日期</strong><span>${escapeHtml(details.activityDate)}</span></div>
+      <div><strong>活動地點</strong><span>${escapeHtml(details.location)}</span></div>
+      <div><strong>帶隊教師簽章</strong><span style="border: 0; background: transparent;"></span></div>
+    </section>
+  `;
+}
+
+function paginateSignInClassBlocks(groups, firstPageCapacity, middlePageCapacity) {
+  const sortedClasses = [...groups.keys()].sort();
+  const blocks = sortedClasses.map(code => ({
+    classCode: code,
+    students: [...groups.get(code)],
+    isContinuation: false
+  }));
+
+  const pages = [];
+  let currentPage = [];
+  let currentCapacity = firstPageCapacity;
+  let remainingCapacity = currentCapacity;
+
+  while (blocks.length > 0) {
+    if (remainingCapacity <= 1) {
+      pages.push(currentPage);
+      currentPage = [];
+      currentCapacity = middlePageCapacity;
+      remainingCapacity = currentCapacity;
+      continue;
+    }
+
+    const block = blocks[0];
+    const rowsNeeded = 1 + block.students.length;
+
+    if (rowsNeeded <= remainingCapacity) {
+      currentPage.push({
+        classCode: block.classCode,
+        students: block.students,
+        isContinuation: block.isContinuation,
+        hasContinuation: false
+      });
+      remainingCapacity -= rowsNeeded;
+      blocks.shift();
+    } else {
+      const maxStudents = remainingCapacity - 1; // 1 for header
+
+      if (maxStudents > 0) {
+        const fitStudents = block.students.slice(0, maxStudents);
+        currentPage.push({
+          classCode: block.classCode,
+          students: fitStudents,
+          isContinuation: block.isContinuation,
+          hasContinuation: true
+        });
+        block.students = block.students.slice(maxStudents);
+        block.isContinuation = true;
+      }
+      
+      pages.push(currentPage);
+      currentPage = [];
+      currentCapacity = middlePageCapacity;
+      remainingCapacity = currentCapacity;
+    }
+  }
+
+  if (currentPage.length > 0) {
+    pages.push(currentPage);
+  }
+
+  return pages;
+}
+
+function renderSignInClassBlock(classCode, students, isContinuation, hasContinuation) {
+  const body = students
+    .map((student) => `
+      <tr>
+        <td class="class-name">${escapeHtml(readableClass(student.classCode))}</td>
+        <td class="seat">${String(student.seatNumber).padStart(2, "0")}</td>
+        <td class="student-id">${escapeHtml(student.studentId || "-")}</td>
+        <td class="student-name" style="font-weight: 700;">${escapeHtml(student.name)}</td>
+        <td class="signin-box"></td>
+        <td class="signin-box"></td>
+      </tr>
+    `)
+    .join("");
+
+  return `
+    <div class="print-class-section signin-class-section" style="margin-bottom: 16px; break-inside: avoid;">
+      <h4 style="font-size: 0.92rem; margin-top: 0; margin-bottom: 6px; border-bottom: 1px solid #333; padding-bottom: 2px; text-align: left; font-weight: 700;">
+        ${escapeHtml(readableClass(classCode))}${isContinuation ? "（續）" : ""}${hasContinuation ? "（接下頁）" : ""}
+      </h4>
+      <table class="student-table print-student-table signin-student-table">
+        <thead>
+          <tr>
+            <th class="class-name">班級</th>
+            <th class="seat">座號</th>
+            <th style="width: 90px;">學號</th>
+            <th style="width: 90px;">姓名</th>
+            <th style="width: 120px; text-align: center;">簽到</th>
+            <th style="width: 120px; text-align: center;">簽退</th>
+          </tr>
+        </thead>
+        <tbody>${body}</tbody>
+      </table>
+      ${hasContinuation ? `
+        <div class="class-continuation-note" style="text-align: right; font-size: 0.8rem; font-weight: 700; margin-top: 6px; color: #333;">
+          （以下接下頁）
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+function renderSignInPages(students, groups) {
+  const pages = paginateSignInClassBlocks(groups, 12, 18);
+  const totalPages = pages.length;
+  const details = getActivityDetails();
+  const school = details.schoolName;
+
+  const sortedClasses = [...groups.keys()].sort();
+  const breakdownText = sortedClasses.map(code => `${readableClass(code)}：${groups.get(code).length}人`).join("、");
+  const statsSummaryHtml = students.length 
+    ? `<div class="print-stats-summary" style="font-size: 0.85rem; margin-bottom: 8px; color: #333; font-weight: 700;">簽到統計：共 ${groups.size} 班，計 ${students.length} 人（${breakdownText}）</div>` 
+    : '';
+
+  printPages.innerHTML = pages
+    .map((pageBlocks, pageIndex) => {
+      const isFirst = pageIndex === 0;
+      
+      const blocksHtml = pageBlocks
+        .map(pb => renderSignInClassBlock(pb.classCode, pb.students, pb.isContinuation, pb.hasContinuation))
+        .join("");
+
+      return `
+        <article class="print-page">
+          <header class="print-header">
+            <h2>${escapeHtml(school)}學生公假活動簽到表</h2>
+          </header>
+          ${isFirst ? renderSignInInfoTable() : renderContinuationLabel()}
+          <section class="print-students">
+            <h3>簽到學生名單${!isFirst ? "（續）" : ""}</h3>
+            ${isFirst ? statsSummaryHtml : ''}
+            ${students.length ? blocksHtml : '<div class="empty-state">尚未輸入學生名單</div>'}
+          </section>
+          <footer class="print-footer">第 ${pageIndex + 1} 頁，共 ${totalPages} 頁</footer>
+        </article>
+      `;
+    })
+    .join("");
 }
 
 function escapeHtml(value) {
@@ -730,6 +1079,7 @@ function update() {
 }
 
 function loadSample() {
+  fields.schoolName.value = "南寧高級中學";
   fields.activityName.value = "校園交通安全宣導勤務";
   fields.applicantUnit.value = "學務處生活輔導組";
   fields.applicantName.value = "賴祥宇";
@@ -753,6 +1103,17 @@ function clearAll() {
     field.value = "";
   });
   localStorage.removeItem(storageKey);
+
+  // Reset school name to Nanning
+  fields.schoolName.value = "南寧高級中學";
+
+  // Reset date to today
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  fields.activityDate.value = `${yyyy}-${mm}-${dd}`;
+
   update();
 }
 
@@ -764,6 +1125,13 @@ document.querySelector("#loadSampleBtn").addEventListener("click", loadSample);
 document.querySelector("#clearBtn").addEventListener("click", clearAll);
 document.querySelector("#printBtn").addEventListener("click", () => {
   renderStudents();
+  window.print();
+});
+
+document.querySelector("#printSignInBtn").addEventListener("click", () => {
+  const { students } = getStudents();
+  const groups = groupByClass(students);
+  renderSignInPages(students, groups);
   window.print();
 });
 
@@ -853,4 +1221,11 @@ if (manualInputTab) {
 }
 
 loadState();
+if (fields.activityDate && !fields.activityDate.value) {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  fields.activityDate.value = `${yyyy}-${mm}-${dd}`;
+}
 update();
