@@ -280,6 +280,8 @@ textarea:focus {
   min-width: 0;
   overflow-wrap: anywhere;
   padding: 8px 10px;
+  white-space: pre-line;
+  line-height: 1.45;
 }
 
 .student-preview {
@@ -547,8 +549,9 @@ textarea:focus {
     padding: 0;
   }
 
-  .permit-paper {
-    display: none;
+  .permit-paper,
+  .signin-preview-stack {
+    display: none !important;
   }
 
   .print-pages {
@@ -806,6 +809,11 @@ textarea:focus {
   padding: 6px 8px !important;
 }
 
+.signin-student-table td.student-id,
+.signin-student-table td.student-name {
+  text-align: center;
+}
+
 .signin-student-table td.signin-box {
   background: transparent;
   cursor: default;
@@ -912,5 +920,336 @@ textarea:focus {
     grid-column: 1 / -1;
   }
 }
+
+/* Schedule & Period Selector Styles */
+.schedule-section {
+  grid-column: 1 / -1;
+  background: #f8fafb;
+  border: 1px solid #d5e0e5;
+  border-radius: 8px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.date-range-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sub-label {
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.schedule-mode-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--line);
+}
+
+.schedule-mode-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #34404a;
+}
+
+.schedule-mode-tabs {
+  display: inline-flex;
+  background: #e3eaee;
+  border-radius: 6px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.schedule-tab-btn {
+  background: transparent;
+  color: #48535e;
+  font-size: 0.82rem;
+  font-weight: 700;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 4px;
+  transition: all 0.18s ease;
+}
+
+.schedule-tab-btn:hover {
+  color: var(--ink);
+}
+
+.schedule-tab-btn.active {
+  background: #fff;
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.schedule-panel {
+  display: grid;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e1e8ed;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.period-selector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.period-label {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #34404a;
+}
+
+.period-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.quick-btn {
+  min-height: 26px;
+  height: 26px;
+  padding: 0 9px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 4px;
+  background: #e8f4f2;
+  color: var(--accent);
+  border: 1px solid #bce0dc;
+  transition: all 0.15s ease;
+}
+
+.quick-btn:hover {
+  background: #d2ebe7;
+  color: var(--accent-dark);
+}
+
+.quick-btn.clear-preset {
+  background: #f1f5f9;
+  color: var(--muted);
+  border-color: #cbd5e1;
+}
+
+.quick-btn.clear-preset:hover {
+  background: #e2e8f0;
+  color: var(--ink);
+}
+
+.period-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.period-chip {
+  min-height: 34px;
+  padding: 4px 11px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 6px;
+  background: #f4f7f9;
+  color: #3b4752;
+  border: 1px solid #cbd5dd;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.period-chip.special-slot {
+  background: #faf6f0;
+  border-color: #dcd3c2;
+  color: #5a4b3c;
+}
+
+.period-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.period-chip.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent-dark);
+  box-shadow: 0 2px 5px rgba(28, 111, 106, 0.22);
+}
+
+.custom-time-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.time-inputs-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.time-inputs-inline input[type="time"] {
+  width: 136px;
+  padding: 6px 9px;
+  font-size: 0.86rem;
+}
+
+.time-sep {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* Daily Schedule List & Cards */
+.daily-panel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.daily-toolbar-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.daily-schedule-list {
+  display: grid;
+  gap: 10px;
+}
+
+.daily-card {
+  background: #f8fafb;
+  border: 1px solid #d5e0e5;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.daily-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.daily-date-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.daily-date-wrap input[type="date"] {
+  width: 155px;
+  padding: 5px 8px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  background: #fff;
+}
+
+.daily-weekday-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--soft);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.daily-remove-btn {
+  min-height: 26px;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 0.76rem;
+  background: #fde8e8;
+  color: #c53030;
+  border: 1px solid #feb2b2;
+  border-radius: 4px;
+}
+
+.daily-remove-btn:hover {
+  background: #fbd5d5;
+}
+
+@media (max-width: 680px) {
+  .date-range-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Keep Applicant Toggle */
+.keep-applicant-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.keep-applicant-toggle input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Preview Mode Tabs & Sign-In Preview Stack */
+.preview-mode-tabs {
+  display: inline-flex;
+  background: #cfd7df;
+  border-radius: 6px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.preview-tab-btn {
+  background: transparent;
+  color: #48535e;
+  font-size: 0.82rem;
+  font-weight: 700;
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 4px;
+  transition: all 0.16s ease;
+}
+
+.preview-tab-btn:hover {
+  color: var(--ink);
+}
+
+.preview-tab-btn.active {
+  background: #fff;
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.signin-preview-stack {
+  display: grid;
+  gap: 20px;
+  align-self: start;
+}
+
+
 
 

@@ -55,20 +55,26 @@
               </div>
               <div class="step-card">
                 <span class="step-num">3</span>
-                <h3>填寫活動資訊與名單</h3>
-                <p>活動日期會預設為「今天」。填寫公假事由，並選擇「<strong>使用名冊比對</strong>」（打學號、座號或姓名）或「<strong>全手動輸入</strong>」（打學號,座號,姓名）。名單下方會自動顯示總人數與班級人數統計，並進行去識別化遮罩（如：<code>蘇○輔</code>）。</p>
+                <h3>填寫活動資訊、時段與名單</h3>
+                <p>支援<strong>單日或跨日</strong>公假，可點選「<strong>節次（早自習～第8節、午休、打掃）</strong>」或輸入「<strong>時間</strong>」（亦可針對跨日逐日設定不同節次）。名單下方會自動統計人數並進行去識別化遮罩（如：<code>蘇○輔</code>）。</p>
               </div>
               <div class="step-card">
                 <span class="step-num">4</span>
                 <h3>確認即時預覽與列印</h3>
-                <p>檢查右側預覽，確認排版正確後即可選擇：點選「<strong>列印公假單</strong>」印出有遮罩的公假請示單；或點選「<strong>列印簽到表</strong>」印出實名簽到表供現場簽到。</p>
+                <p>檢查右側預覽，確認排版正確後即可選擇：點選「<strong>列印公假單</strong>」印出有遮罩的公假請示單；或點選「<strong>列印簽到表</strong>」依活動日數逐日印出實名簽到表供現場簽到。</p>
               </div>
             </div>
           </div>
         </section>
 
         <section class="panel" aria-labelledby="activityTitle">
-          <h2 id="activityTitle">活動資訊</h2>
+          <div class="panel-heading" style="margin-bottom: 12px;">
+            <h2 id="activityTitle" style="margin-bottom: 0;">活動資訊與公假時段</h2>
+            <label class="keep-applicant-toggle" title="勾選後，點選上方「清空」按鈕時將保留學校名稱、申請單位與申請人">
+              <input id="keepApplicantCheck" type="checkbox" checked>
+              <span>清空時保留單位與申請人</span>
+            </label>
+          </div>
           <div class="form-grid">
             <label>
               學校名稱
@@ -86,22 +92,70 @@
               申請人
               <input id="applicantName" type="text" placeholder="例如：賴祥宇">
             </label>
-            <label>
-              活動日期
-              <input id="activityDate" type="date">
-            </label>
-            <label>
+            <label class="wide">
               活動地點
               <input id="location" type="text" placeholder="例如：活動中心、校門口">
             </label>
-            <label>
-              開始時間
-              <input id="startTime" type="time">
-            </label>
-            <label>
-              結束時間
-              <input id="endTime" type="time">
-            </label>
+
+            <!-- 跨日與時段（節次/時間）設定區塊 -->
+            <div class="schedule-section wide">
+              <div class="date-range-row">
+                <label>
+                  開始日期
+                  <input id="activityDate" type="date">
+                </label>
+                <label>
+                  結束日期 <span class="sub-label">（單日活動維持與開始日期相同即可）</span>
+                  <input id="activityEndDate" type="date">
+                </label>
+              </div>
+
+              <div class="schedule-mode-bar">
+                <span class="schedule-mode-title">時段設定方式：</span>
+                <div class="schedule-mode-tabs">
+                  <button id="uniformScheduleTab" type="button" class="schedule-tab-btn active">單日 ／ 每日相同時段</button>
+                  <button id="dailyScheduleTab" type="button" class="schedule-tab-btn">跨日逐日設定不同時段</button>
+                </div>
+              </div>
+
+              <!-- 模式 1：單日或每日相同時段 -->
+              <div id="uniformSchedulePanel" class="schedule-panel">
+                <div class="period-selector-header">
+                  <span class="period-label">選擇節次／時段（可點選多個，或使用右側快捷鍵）：</span>
+                  <div class="period-quick-actions" data-target="uniform">
+                    <button type="button" class="quick-btn" data-preset="all">全天</button>
+                    <button type="button" class="quick-btn" data-preset="morning">上午</button>
+                    <button type="button" class="quick-btn" data-preset="afternoon">下午</button>
+                    <button type="button" class="quick-btn" data-preset="classes">第1~7節</button>
+                    <button type="button" class="quick-btn clear-preset" data-preset="clear">清除</button>
+                  </div>
+                </div>
+                <div id="uniformPeriodGroup" class="period-chips" role="group" aria-label="公假節次選擇"></div>
+
+                <div class="custom-time-row">
+                  <span class="period-label">補充或自訂起迄時間（選填，可單獨填寫或搭配節次顯示）：</span>
+                  <div class="time-inputs-inline">
+                    <input id="startTime" type="time" aria-label="開始時間">
+                    <span class="time-sep">至</span>
+                    <input id="endTime" type="time" aria-label="結束時間">
+                    <button id="clearTimeBtn" type="button" class="quick-btn clear-preset">清除時間</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 模式 2：跨日逐日分別設定時段 -->
+              <div id="dailySchedulePanel" class="schedule-panel" style="display: none;">
+                <div class="daily-panel-toolbar">
+                  <p class="hint" style="margin: 0;">可針對每一天個別設定公假節次或時間（例如：首日下午出發、隔天全天比賽），亦可刪減或新增特定日期。</p>
+                  <div class="daily-toolbar-actions">
+                    <button id="syncDailyRangeBtn" type="button" class="btn ghost btn-sm">↻ 依起迄日期重設天數</button>
+                    <button id="addDailyRowBtn" type="button" class="btn ghost btn-sm">＋ 新增一天</button>
+                  </div>
+                </div>
+                <div id="dailyScheduleList" class="daily-schedule-list"></div>
+              </div>
+            </div>
+
             <label class="wide">
               活動事由
               <textarea id="reason" rows="3" placeholder="簡述公假原因與活動內容"></textarea>
@@ -123,14 +177,14 @@
 
           <!-- Use Roster Mode Panel -->
           <div id="useRosterMode">
-            <p class="hint">每行可輸入「40101」、「401-02」、「學號」、「姓名」或三碼班級代號如「401」(帶入全班)。</p>
-            <textarea id="studentInput" rows="12" spellcheck="false" placeholder="40101&#10;401-02&#10;999001&#10;蘇大輔&#10;401"></textarea>
+            <p class="hint">支援以<strong>換行、空格、逗號、頓號</strong>隔開多筆。可輸入「40101 40102」、「蘇大輔 賴小祥」、同班速記「<strong>401: 1 3 5 12</strong>」、連號「<strong>40101~40110</strong>」或班級「401」(帶入全班)。</p>
+            <textarea id="studentInput" rows="12" spellcheck="false" placeholder="範例（換行或空格皆可）：&#10;40101 401-02 999001&#10;蘇大輔 賴小祥&#10;401: 1 3 5 12&#10;401: 1~10&#10;401 (全班)"></textarea>
           </div>
 
           <!-- Manual Input Mode Panel -->
           <div id="manualInputMode" style="display: none;">
-            <p class="hint">直接輸入學生資料。每行輸入「學號,班級座號,姓名」或「班級座號 姓名」（例如「40101 蘇大輔」），系統會直接產生公假單，並自動加入暫存名冊中供後續比對。</p>
-            <textarea id="manualStudentInput" rows="12" spellcheck="false" placeholder="例如：&#10;999001,40101,蘇大輔&#10;40102 賴小祥"></textarea>
+            <p class="hint">直接輸入學生資料。每筆輸入「學號,班級座號,姓名」或「班級座號 姓名」（例如「40101 蘇大輔」），亦支援在同一行用<strong>空格、頓號或逗號</strong>隔開多位學生。</p>
+            <textarea id="manualStudentInput" rows="12" spellcheck="false" placeholder="例如（支援換行或空格多筆）：&#10;40101 蘇大輔 40102 賴小祥&#10;999001,40101,蘇大輔"></textarea>
           </div>
 
 
@@ -154,19 +208,22 @@
 
 
       </div>
-      <footer class="app-footer" style="text-align: center; padding: 16px; font-size: 0.76rem; color: var(--muted); border-top: 1px solid var(--border); margin-top: 20px;">
+      <footer class="app-footer" style="text-align: center; padding: 16px; font-size: 0.76rem; color: var(--muted); border-top: 1px solid var(--line); margin-top: 20px;">
         <p>製作人：Antigravity (Google DeepMind AI Coding Assistant) &nbsp;|&nbsp; 靈感與設計：114學年度南寧高中生輔組組長</p>
       </footer>
     </section>
 
     <aside class="preview-wrap" aria-label="公假單預覽">
       <div class="preview-tools">
-        <span>即時預覽</span>
+        <div class="preview-mode-tabs" role="tablist" aria-label="預覽表單切換">
+          <button id="previewPermitTab" type="button" class="preview-tab-btn active">📄 預覽公假單（遮罩）</button>
+          <button id="previewSignInTab" type="button" class="preview-tab-btn">📋 預覽簽到表（實名）</button>
+        </div>
         <span id="classCount">0 班</span>
       </div>
       <article id="permitPreview" class="permit-paper">
         <header class="permit-header">
-          <h2>南寧高級中學學生公假單請示單</h2>
+          <h2 data-preview="permitTitle">南寧高級中學學生公假單請示單</h2>
         </header>
 
         <section class="info-table" aria-label="活動資訊預覽">
@@ -199,6 +256,7 @@
           <div>校長</div>
         </section>
       </article>
+      <div id="signInPreview" class="signin-preview-stack" style="display: none;" aria-label="簽到表即時預覽"></div>
       <div id="printPages" class="print-pages" aria-hidden="true"></div>
     </aside>
   </main>
